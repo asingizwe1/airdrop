@@ -6,13 +6,13 @@ import {MerkleAirdrop} from "./MerkleAirdrop.sol";
 contract MerkleAirdrop{
     using SafeERC20 for IERC20;
 error MerkleAirdrop__InvalidProof();
-
+error MerkleAirdrop__AlreadyClaimed();
 //some list of addresses
 //allow someone in the list to claim ERC20 tokens
 address[] claimers;
 //constructor where we can pass in our erc20 token and merkle root to compare against
 IERC20 private immutable i_airdropToken;
-mapping(address claimer => bool claimed) private i_claimed;//to verify that the person claimed
+mapping(address claimer => bool claimed) private s_hasClaimed;//storage variableto verify that the person claimed
 bytes32 private immutable i_merkleRoot;
 //we are going to store the parameters as storage values
 event Claim(address account, uint256 amount);
@@ -28,7 +28,10 @@ i_airdropToken = airdropToken;
 //inrermediate hashes required for the proof - merkleProof
 function claim(address account, uint256 amount, bytes32[] calldata) external{
 ///calculate the hash- leaf node
+if(s_hasClaimed[account]){
+revert MerkleAirdrop__AlreadyClaimed();//revert with this error message if already claimed
 
+}
 //hashes twice to prevent collison
 bytes32 leaf=keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
 //second preimage attack
@@ -40,10 +43,11 @@ if (!MerkleAirdrop.verify(merkleProof,i_merkleRoot,leaf)){
 revert MerkleAirdrop__InvalidProof();
 
 }
+
 emit Claim(account, amount);
 i_airdropToken.safeTransfer(account, amount);
 //if we cant send tokens safe erc20 will handle that for us
-
+//just adding the has claimed would be following the CEI -check,effect,interaction pattern
 
 }
 
