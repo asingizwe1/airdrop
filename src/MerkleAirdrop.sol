@@ -12,6 +12,7 @@ error MerkleAirdrop__InvalidProof();
 address[] claimers;
 //constructor where we can pass in our erc20 token and merkle root to compare against
 IERC20 private immutable i_airdropToken;
+mapping(address claimer => bool claimed) private i_claimed;//to verify that the person claimed
 bytes32 private immutable i_merkleRoot;
 //we are going to store the parameters as storage values
 event Claim(address account, uint256 amount);
@@ -20,6 +21,9 @@ constructor(bytes32 merkleRoot, IERC20 airdropToken){
 i_merkleRoot = merkleRoot;
 i_airdropToken = airdropToken;
 }
+
+//keeping track of who has claimed
+
 //takes address enabling people claim and amount , array to store - call datd
 //inrermediate hashes required for the proof - merkleProof
 function claim(address account, uint256 amount, bytes32[] calldata) external{
