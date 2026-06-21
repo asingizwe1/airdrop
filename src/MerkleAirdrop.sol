@@ -51,8 +51,10 @@ i_airdropToken.safeTransfer(account, amount);
 
 }
 
-
-
-
+//adding getters
+function getmerkleRoot() external view returns(bytes32){
+    return i_merkleRoot;}
+function getAirdropToken() external view returns(IERC20){
+    return i_airdropToken;}//sp that we can get to know the airdrop address
 
 }
