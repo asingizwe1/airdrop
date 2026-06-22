@@ -2,8 +2,12 @@
 remappings = [
     "openzeppelin-contracts=lib/openzeppelin-contracts",
     "forge-std=lib/forge-std/src/",
+    'murky/=lib/murky',
 ]
 src = "src"
 out = "out"
 libs = ["lib"]
+fs_permissions = [
+    { access = "read-write", path = "./" },
+] # read and write plus the path of the files you want to read and write to
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

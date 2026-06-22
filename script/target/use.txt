@@ -1,1 +1,6 @@
 containc the target files this merkle file is going to hit
+
+//INPUT_JSON will be used by makeMerkle script to create output.json file
+
+//OUTPUT_JSON will contain all leafnodes or outputs from makeMerkle script, which will be used by the frontend to verify the proof and claim the airdrop
+//each leaf node will have node
