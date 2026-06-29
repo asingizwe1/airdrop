@@ -18,7 +18,8 @@ bytes32[] public PROOF = [];//copy proofs into the test file
 address public user = "0x6CA6d1e2D5347Bfab1d91e883F1915560e09129D";
 uint256 userPrivkey;
 //will run automatically when we run our script
-function setUp() public {
+function setUp() public {//if its a zksync chain we want to be using this then if it isnt we would use our deployment script
+//you cant use scripts to deploy in a zksync environment
     bagel = new BagelToken();
     airdrop = new MerkleAirdrop(ROOT,token);
     token.mint(token.owner(),AMOUNT_TO_SEND);
