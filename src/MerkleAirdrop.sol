@@ -7,6 +7,7 @@ contract MerkleAirdrop{
     using SafeERC20 for IERC20;
 error MerkleAirdrop__InvalidProof();
 error MerkleAirdrop__AlreadyClaimed();
+error MerkleAirdrop__InvalidSignature();
 //some list of addresses
 //allow someone in the list to claim ERC20 tokens
 address[] claimers;
@@ -15,6 +16,7 @@ IERC20 private immutable i_airdropToken;
 mapping(address claimer => bool claimed) private s_hasClaimed;//storage variableto verify that the person claimed
 bytes32 private immutable i_merkleRoot;
 //we are going to store the parameters as storage values
+
 event Claim(address account, uint256 amount);
 //takes merkle root and token we wish to airdrop to our users
 constructor(bytes32 merkleRoot, IERC20 airdropToken){
@@ -22,16 +24,34 @@ i_merkleRoot = merkleRoot;
 i_airdropToken = airdropToken;
 }
 
+
+//signature creation , veirfication 
+
+
+
+
+
+
+
 //keeping track of who has claimed
 
 //takes address enabling people claim and amount , array to store - call datd
 //inrermediate hashes required for the proof - merkleProof
-function claim(address account, uint256 amount, bytes32[] calldata) external{
+
+//we parse our signature to claim so that one can sign and say i claimed for this account
+//we pass into v,r,s
+function claim(address account, uint256 amount, bytes32[] calldata merkleProof, uint8 v, bytes32 r, bytes32 s) external{
 ///calculate the hash- leaf node
 if(s_hasClaimed[account]){
 revert MerkleAirdrop__AlreadyClaimed();//revert with this error message if already claimed
 
 }
+//check signature
+//if not valid we get an error
+//we use an internal function to check whether the signature is valid
+if(!_isValidSignature(account, message, v, r, s)){revert MerkleAirdrop__InvalidSignature();}
+
+
 //hashes twice to prevent collison
 bytes32 leaf=keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
 //second preimage attack

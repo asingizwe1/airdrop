@@ -3,8 +3,9 @@ pragma solidity ^0.8.24;
 
 import {Test,console} from "forge-std/Test.sol";
 import {MerkleAirdrop} from "../src/MerkleAirdrop.sol";
-    
-    contract MerkleAirdropTest is Test {
+    import {ZkSyncChainChecker} from "lib/foundry-devops/src/ZkSyncChainChecker.sol"; 
+import {DeployMerkleAirdrop} from "script/DeployMerkleAirdrop.s.sol";
+    contract MerkleAirdropTest is ZkSyncChainChecker,Test {
 MerkleAirdrop private airdrop;
 BagelToken private bagel;
 //creatd coz we dont want magic numbers in function calls
@@ -20,14 +21,20 @@ uint256 userPrivkey;
 //will run automatically when we run our script
 function setUp() public {//if its a zksync chain we want to be using this then if it isnt we would use our deployment script
 //you cant use scripts to deploy in a zksync environment
+//its optional to deploy to zksunc
+if(!isZkSyncChain){
+//deploy with script
+DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
+(airdrop,token)= deployer.deployMerkleAirdrop();
+}else{
     bagel = new BagelToken();
     airdrop = new MerkleAirdrop(ROOT,token);
     token.mint(token.owner(),AMOUNT_TO_SEND);
     token.transfer(address(airdrop),AMOUNT_TO_SEND);//airdrop comtains all tokens for the airdrop
     //since airdrop is of type mERKLEROOT We must cast the airdrop above to address
-    (user,userPrivkey) = makeAddrAndKey("user");//craete an address and private key
-}
+  }  (user,userPrivkey) = makeAddrAndKey("user");//craete an address and private key
 
+}
 function testUsersCanClaim() public{
 console.log("User address: %s", user);//you opy the address you get and put it in array of addresses
 //we first store their initial address
