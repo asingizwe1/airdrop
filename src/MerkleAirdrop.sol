@@ -2,7 +2,7 @@
 pragma  solidity ^0.8.24;
 import {IERC20,SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {MerkleAirdrop} from "./MerkleAirdrop.sol";
-
+import {EIP712} from "openzeppelin-contracts/utils/cryptography/draft-EIP712.sol";
 contract MerkleAirdrop{
     using SafeERC20 for IERC20;
 error MerkleAirdrop__InvalidProof();
@@ -16,6 +16,11 @@ IERC20 private immutable i_airdropToken;
 mapping(address claimer => bool claimed) private s_hasClaimed;//storage variableto verify that the person claimed
 bytes32 private immutable i_merkleRoot;
 //we are going to store the parameters as storage values
+
+struct AirDropClaim{
+    address account;
+    uint256 amount;
+}
 
 event Claim(address account, uint256 amount);
 //takes merkle root and token we wish to airdrop to our users
@@ -49,8 +54,8 @@ revert MerkleAirdrop__AlreadyClaimed();//revert with this error message if alrea
 //check signature
 //if not valid we get an error
 //we use an internal function to check whether the signature is valid
-if(!_isValidSignature(account, message, v, r, s)){revert MerkleAirdrop__InvalidSignature();}
-
+if(!_isValidSignature(account, getMessage(account,amount), v, r, s)){revert MerkleAirdrop__InvalidSignature();}
+//message is digest and we get it from method which hashes
 
 //hashes twice to prevent collison
 bytes32 leaf=keccak256(bytes.concat(keccak256(abi.encode(account, amount))));
@@ -62,6 +67,27 @@ if (!MerkleAirdrop.verify(merkleProof,i_merkleRoot,leaf)){
 //revert is followed by atleast contract name
 revert MerkleAirdrop__InvalidProof();
 
+}
+
+function _isValidSignature(address account, bytes32 digest, uint8 v, bytes32 r, bytes32 s) internal pure returns(bool){
+    //ecrecover returns the address that signed the message
+    //ECDSA-> RECOVER signer from the signature
+(address actualSigner,,)=ECDSA.recover(digest, v, r, s);
+    return actualSigner == account;
+
+}
+
+function getMessage(address account, uint256 amount) public view returns(bytes32){
+    //_hashTypedDataV4 from openzeppelin EIP712.sol
+    return _hashTypedDataV4(keccak256(abi.encode(
+        keccak256("Claim(address account,uint256 amount)"),
+        AirDropClaim{
+            account,
+            amount
+        }
+        // account,//better if they are in a struct
+        // amount
+    )));
 }
 
 emit Claim(account, amount);
