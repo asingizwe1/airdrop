@@ -17,6 +17,7 @@ mapping(address claimer => bool claimed) private s_hasClaimed;//storage variable
 bytes32 private immutable i_merkleRoot;
 //we are going to store the parameters as storage values
 
+
 struct AirDropClaim{
     address account;
     uint256 amount;
@@ -24,7 +25,7 @@ struct AirDropClaim{
 
 event Claim(address account, uint256 amount);
 //takes merkle root and token we wish to airdrop to our users
-constructor(bytes32 merkleRoot, IERC20 airdropToken){
+constructor(bytes32 merkleRoot, IERC20 airdropToken) EIP721("MerkleAIRDROP","1"){
 i_merkleRoot = merkleRoot;
 i_airdropToken = airdropToken;
 }
@@ -47,7 +48,7 @@ i_airdropToken = airdropToken;
 //we pass into v,r,s
 function claim(address account, uint256 amount, bytes32[] calldata merkleProof, uint8 v, bytes32 r, bytes32 s) external{
 ///calculate the hash- leaf node
-if(s_hasClaimed[account]){
+if(s_hasClaimed[account]){//implemented a signature such that someone an initiate call with our address
 revert MerkleAirdrop__AlreadyClaimed();//revert with this error message if already claimed
 
 }
@@ -94,6 +95,14 @@ emit Claim(account, amount);
 i_airdropToken.safeTransfer(account, amount);
 //if we cant send tokens safe erc20 will handle that for us
 //just adding the has claimed would be following the CEI -check,effect,interaction pattern
+
+}
+
+function getMessageHash(address account,uint256 amount) public returns (bytes32)
+return _hashTypedDataV4
+{
+keccack256(abi.encode(MESSAGE_TYPEHASH,AirdropClaim({account:account,amount:amount})));
+
 
 }
 

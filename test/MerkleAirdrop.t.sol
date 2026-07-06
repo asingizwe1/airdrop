@@ -1,6 +1,13 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
+/**
+ * 
+merkle proofs and we have implemented them into contracts
+implementated signature verification into smart contracts
 
+
+
+ */
 import {Test,console} from "forge-std/Test.sol";
 import {MerkleAirdrop} from "../src/MerkleAirdrop.sol";
     import {ZkSyncChainChecker} from "lib/foundry-devops/src/ZkSyncChainChecker.sol"; 
@@ -18,6 +25,10 @@ bytes32 proofTwo=;
 bytes32[] public PROOF = [];//copy proofs into the test file
 address public user = "0x6CA6d1e2D5347Bfab1d91e883F1915560e09129D";
 uint256 userPrivkey;
+//we create another address that is going to call claim
+address public gasPayer;
+
+
 //will run automatically when we run our script
 function setUp() public {//if its a zksync chain we want to be using this then if it isnt we would use our deployment script
 //you cant use scripts to deploy in a zksync environment
@@ -33,7 +44,7 @@ DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
     token.transfer(address(airdrop),AMOUNT_TO_SEND);//airdrop comtains all tokens for the airdrop
     //since airdrop is of type mERKLEROOT We must cast the airdrop above to address
   }  (user,userPrivkey) = makeAddrAndKey("user");//craete an address and private key
-
+gasPayer= makeAddr("gasPayer");
 }
 function testUsersCanClaim() public{
 console.log("User address: %s", user);//you opy the address you get and put it in array of addresses
@@ -41,7 +52,17 @@ console.log("User address: %s", user);//you opy the address you get and put it i
 uint256 startignBalance = token.balanceOf(user);
 airdrop.claim(user,AMOUNT_TO_CLAIM,PROOF);
 
-vm.prank(user);//prank pranks the next line
+//we first get the message digest
+bytes32 messageDigest = airdrop.getMessage(user,AMOUNT_TO_CLAIM);
+
+// vm.prank(user);
+// //prank user to sign a message
+//after declaring the digest you can now sign the digest using private key after makeAddr()
+(uint8 v, bytes32 r, bytes32 s)=vm.sign(userPrivkey,digest);
+
+//gasPayer calls claim using the signed message
+
+//prank pranks the next line
 //we use the prank function to simulate the user calling the claim function
 uint256 endingBalance = token.balanceOf(user);
 console.log("User balance after claim: %s", endingBalance);
