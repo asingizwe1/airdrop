@@ -1,8 +1,8 @@
-//SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {script} from "forge-std/Script.sol";
-import {DevopsTools} from "lib/foundry-devops/src/Devs.sol";
+import {Script} from "forge-std/Script.sol";
+import {DevOpsTools} from "foundry-devops/src/DevOpsTools.sol";
 import {MerkleAirdrop} from "../src/MerkleAirdrop.sol";
 //so that we can call claim
 
@@ -30,3 +30,6 @@ claimAirdrop(mostRecentDeployed);
 }
 
 }
+//make deploy get address then cast call _address ,amount
+//cast wallet sign --no-hash so that it doesnt sign the meassage
+//pass the message to 
