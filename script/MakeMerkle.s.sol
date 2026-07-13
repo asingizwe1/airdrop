@@ -31,8 +31,9 @@ contract MakeMerkle is Script, ScriptHelper {
     string private inputPath = "/script/target/input.json";
     string private outputPath = "/script/target/output.json";
 
-    string private elements = vm.readFile(string.concat(vm.projectRoot(), inputPath)); // get the absolute path 
-    string[] private types = elements.readStringArray(".types"); // gets the merkle tree leaf types from json using forge standard lib cheatcode 
+    string private elements =
+        vm.readFile(string.concat(vm.projectRoot(), inputPath)); // get the absolute path
+    string[] private types = elements.readStringArray(".types"); // gets the merkle tree leaf types from json using forge standard lib cheatcode
     uint256 private count = elements.readUint(".count"); // get the number of leaf nodes
 
     // make three arrays the same size as the number of leaf nodes
@@ -45,30 +46,34 @@ contract MakeMerkle is Script, ScriptHelper {
 
     /// @dev Returns the JSON path of the input file
     // output file output ".values.some-address.some-amount"
-    function getValuesByIndex(uint256 i, uint256 j) internal pure returns (string memory) {
+    function getValuesByIndex(
+        uint256 i,
+        uint256 j
+    ) internal pure returns (string memory) {
         return string.concat(".values.", vm.toString(i), ".", vm.toString(j));
     } //format values and print them by index
 
     /// @dev Generate the JSON entries for the output file
-    function generateJsonEntries(string memory _inputs, string memory _proof, string memory _root, string memory _leaf)
-        internal
-        pure
-        returns (string memory)
-    {
+    function generateJsonEntries(
+        string memory _inputs,
+        string memory _proof,
+        string memory _root,
+        string memory _leaf
+    ) internal pure returns (string memory) {
         string memory result = string.concat(
             "{",
-            "\"inputs\":",
+            '"inputs":',
             _inputs,
             ",",
-            "\"proof\":",
+            '"proof":',
             _proof,
             ",",
-            "\"root\":\"",
+            '"root":"',
             _root,
-            "\",",
-            "\"leaf\":\"",
+            '",',
+            '"leaf":"',
             _leaf,
-            "\"",
+            '"',
             "}"
         );
 
@@ -82,33 +87,40 @@ contract MakeMerkle is Script, ScriptHelper {
         for (uint256 i = 0; i < count; ++i) {
             string[] memory input = new string[](types.length); // stringified data (address and string both as strings)
             bytes32[] memory data = new bytes32[](types.length); // actual data as a bytes32
-//loop through the leaves
-            for (uint256 j = 0; j < types.length; ++j) {//types.length -> number of variables
+            //loop through the leaves
+            for (uint256 j = 0; j < types.length; ++j) {
+                //types.length -> number of variables
                 if (compareStrings(types[j], "address")) {
-                    address value = elements.readAddress(getValuesByIndex(i, j));
+                    address value = elements.readAddress(
+                        getValuesByIndex(i, j)
+                    );
                     // you can't immediately cast straight to 32 bytes as an address is 20 bytes so first cast to uint160 (20 bytes) cast up to uint256 which is 32 bytes and finally to bytes32
                     data[j] = bytes32(uint256(uint160(value))); //simce you cant cast directly to bytes32, cast to 160 first then 256
                     input[j] = vm.toString(value);
                 } else if (compareStrings(types[j], "uint")) {
-                    uint256 value = vm.parseUint(elements.readString(getValuesByIndex(i, j)));
+                    uint256 value = vm.parseUint(
+                        elements.readString(getValuesByIndex(i, j))
+                    );
                     data[j] = bytes32(value);
                     input[j] = vm.toString(value);
                 }
             }
             // Create the hash for the merkle tree leaf node
             // abi encode the data array (each element is a bytes32 representation for the address and the amount)
-            // Helper from Murky (ltrim64) Returns the bytes with the first 64 bytes removed 
+            // Helper from Murky (ltrim64) Returns the bytes with the first 64 bytes removed
             // ltrim64 removes the offset and length from the encoded bytes. There is an offset because the array
             // is declared in memory
             // hash the encoded address and amount
             // bytes.concat turns from bytes32 to bytes
             // hash again because preimage attack
-            leafs[i] = keccak256(bytes.concat(keccak256(ltrim64(abi.encode(data)))));//we create a hash for merkle tree leafnodes
+            leafs[i] = keccak256(
+                bytes.concat(keccak256(ltrim64(abi.encode(data))))
+            ); //we create a hash for merkle tree leafnodes
             // Converts a string array into a JSON array string.
             // store the corresponding values/inputs for each leaf node
             inputs[i] = stringArrayToString(input);
         }
-//BAICALLY TAKING INPUTS AND USING MERKLE CONTRACT TO GENERATE PROOFS AND ROOTS AND THEN WRITING TO OUTPUT FILE
+        //BAICALLY TAKING INPUTS AND USING MERKLE CONTRACT TO GENERATE PROOFS AND ROOTS AND THEN WRITING TO OUTPUT FILE
         for (uint256 i = 0; i < count; ++i) {
             // get proof gets the nodes needed for the proof & stringify (from helper lib)
             string memory proof = bytes32ArrayToString(m.getProof(leafs, i));
@@ -131,3 +143,25 @@ contract MakeMerkle is Script, ScriptHelper {
         console.log("DONE: The output is found at %s", outputPath);
     }
 }
+
+/**
+ *1- deploy token contract 
+ *forge create --account u2 -> in key store you can put your address thats in the input.json
+ * forge create --account u
+ *  forge create src/BagelToken.sol:BagelToken --rpc-url ${ZKSYNC_SEPOLIA_RPC_URL} --account updraft --legacy --zksync  
+ * legacy is type 0
+ * forge create src/MerkleAirdrop.sol:MerkleAirdrop --constructor-args 0x474d994c58e37b12085fdb7bc6bbcd046cf1907b90de3b7fb083cf3636c8ebfb ${TOKEN_ADDRESS} --rpc-url ${ZKSYNC_SEPOLIA_RPC_URL} --account updraft --legacy --zksync
+ * //export address via tweminal
+ *  cast call ${AIRDROP_ADDRESS} "getMessageHash(address,uint256)" 0x2ea3970Ed8205b30be821FAAD4a731D35964F7d(address to receive airdrop) 2500000000000000000 --rpc-url ${ZKSYNC_SEPOLIA_RPC_URL}
+ * //we then get message to sign
+ * cast wallet sign --no-hash 0xb37630ae79f68b63ba0240a965dc09dbc188bc082fd2425d70c1885933fd66a1(message to sign) --account updraft-2
+ * //you get the bytes
+ *forge script script/SlitSignature.s.sol:SpliSignature
+ * //we first send tokens to our first address 
+cast send ${TOKEN_ADDRESS} "mint(address,uint256)" 0x52d64ED1fd0877797e2030fc914259e052F2b067 1000000000 --account updraft --rpc-url ${ZKSYNC_SEPOLIA_RPC_URL
+//sending tokens to token Contract
+ cast send ${TOKEN_ADDRESS} "transfer(address,uint256)" ${AIRDROP_ADDRESS} 1000000000000000000 --account updraft--rpc-url ${ZKSYNC_SEPOLIA_RPC_URL
+cast send ${AIRDROP_ADDRESS} "Claim(address,uint256,bytes32[],uint8,bytes32,bytes32)" 0x2ea3970Ed8205b30be821FAAD4a731D35964F7d(address to receive airdrop) 2500000000000000000 "[proof1,prrof2]" ${V} ${R} ${S} --account updraft --rpc-url ${ZKSYNC_SEPOLIA_RPC_URL
+
+ * 
+ */
